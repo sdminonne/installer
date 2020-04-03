@@ -33,6 +33,18 @@ resource "openstack_networking_subnet_v2" "nodes" {
   }
 }
 
+resource "openstack_networking_router_v2" "openshift-external-router" {
+  name                = "${var.cluster_id}-external-router"
+  admin_state_up      = true
+  external_network_id = data.openstack_networking_network_v2.external_network.id
+  tags                = ["openshiftClusterID=${var.cluster_id}"]
+}
+
+resource "openstack_networking_router_interface_v2" "nodes_router_interface" {
+  router_id = openstack_networking_router_v2.openshift-external-router.id
+  subnet_id = openstack_networking_subnet_v2.nodes.id
+}
+
 resource "openstack_networking_port_v2" "masters" {
   name  = "${var.cluster_id}-master-port-${count.index}"
   count = var.masters_count
@@ -124,16 +136,3 @@ resource "openstack_networking_floatingip_associate_v2" "api_fip" {
   port_id     = openstack_networking_port_v2.api_port.id
   floating_ip = var.lb_floating_ip
 }
-
-resource "openstack_networking_router_v2" "openshift-external-router" {
-  name                = "${var.cluster_id}-external-router"
-  admin_state_up      = true
-  external_network_id = data.openstack_networking_network_v2.external_network.id
-  tags                = ["openshiftClusterID=${var.cluster_id}"]
-}
-
-resource "openstack_networking_router_interface_v2" "nodes_router_interface" {
-  router_id = openstack_networking_router_v2.openshift-external-router.id
-  subnet_id = openstack_networking_subnet_v2.nodes.id
-}
-
